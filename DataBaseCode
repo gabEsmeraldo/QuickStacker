@@ -1,0 +1,121 @@
+-- OPCIONAL: criar um schema separado para o projeto
+create schema if not exists tomdepele_estoque;
+set search_path to tomdepele_estoque, public;
+
+------------------------------------------------------------
+-- TABELA: Categoria
+------------------------------------------------------------
+create table categoria (
+    id_categoria        int generated always as identity primary key,
+    descricao           varchar(255) not null
+);
+
+------------------------------------------------------------
+-- TABELA: Produto
+-- Quantidade_total é derivada (ex.: soma das quantidades dos lotes)
+-- aqui deixo como campo normal para você controlar via triggers/app
+------------------------------------------------------------
+create table produto (
+    id_produto              int generated always as identity primary key,
+    nome                    varchar(255) not null,
+    quantidade_total        int default 0,     -- atributo derivado
+    validade_em_meses       int,
+    categoria_id_categoria  int not null references categoria(id_categoria)
+);
+
+------------------------------------------------------------
+-- TABELA: Materia Prima
+------------------------------------------------------------
+create table materia_prima (
+    id_materia_prima    int generated always as identity primary key,
+    nome                varchar(255) not null,
+    densidade           double precision,
+    peso_unitario       double precision
+    -- relação N–1 com lote_materia_prima via FK em lote_materia_prima
+);
+
+------------------------------------------------------------
+-- TABELA: Insumo
+-- custo_unitario é derivado dos lotes comprados
+------------------------------------------------------------
+create table insumo (
+    id_insumo       int generated always as identity primary key,
+    nome            varchar(255) not null,
+    custo_unitario  numeric(12,4)  -- atributo derivado
+);
+
+------------------------------------------------------------
+-- TABELA: Lote (de Produto acabado)
+------------------------------------------------------------
+create table lote (
+    id_lote                     int generated always as identity primary key,
+    data_validade               date not null,
+    data_producao               date not null,
+    custo_unitario_producao     numeric(12,4),
+    quantidade                  int not null,
+    id_produto                  int not null references produto(id_produto)
+    -- relação N–1: muitos lotes para 1 produto
+);
+
+------------------------------------------------------------
+-- TABELA: LoteMateriaPrima
+-- Lote de matéria-prima recebida
+------------------------------------------------------------
+create table lote_materia_prima (
+    id_lote_mp          varchar(50) primary key,
+    data_validade       date,
+    data_chegada        date not null,
+    custo_de_compra     numeric(12,4) not null,
+    id_materia_prima    int not null references materia_prima(id_materia_prima),
+    quantidade_unidades double precision not null,
+    fornecedor          varchar(255),
+    numero_nota_fiscal  int,
+    quantidade_de_caixas int,
+    laudo               boolean default false,
+    -- opcional: quem recebeu (você pode depois ligar com auth.users via UUID)
+    responsavel_recebimento varchar(255)
+);
+
+------------------------------------------------------------
+-- TABELA: LoteInsumo
+------------------------------------------------------------
+create table lote_insumo (
+    id_lote_insumo  varchar(50) primary key,
+    data_chegada    date not null,
+    quantidade      int not null,
+    custo_de_compra numeric(12,4) not null,
+    id_insumo       int not null references insumo(id_insumo)
+);
+
+------------------------------------------------------------
+-- TABELA: Formula
+-- Relação 1–1 com Produto via produto_id_produto UNIQUE
+------------------------------------------------------------
+create table formula (
+    id_formula              int generated always as identity primary key,
+    produto_id_produto      int not null unique references produto(id_produto),
+    descricao_modo_preparo  text
+    -- 1–1 Produto Pronto
+);
+
+------------------------------------------------------------
+-- TABELA N–N: Formula_has_Materia_Prima
+-- chave primária composta (formula_id_formula, materia_prima_id_materia_prima)
+------------------------------------------------------------
+create table formula_has_materia_prima (
+    formula_id_formula          int not null references formula(id_formula),
+    materia_prima_id_materia_prima int not null references materia_prima(id_materia_prima),
+    quantidade_utilizada        double precision not null,
+    custo_por_quantidade        numeric(12,4), -- derivado (ex.: custo_compra * quantidade_utilizada)
+    primary key (formula_id_formula, materia_prima_id_materia_prima)
+);
+
+------------------------------------------------------------
+-- TABELA N–N: Formula_has_Insumo
+------------------------------------------------------------
+create table formula_has_insumo (
+    formula_id_formula  int not null references formula(id_formula),
+    insumo_id_insumo    int not null references insumo(id_insumo),
+    quantidade_utilizada int not null,
+    primary key (formula_id_formula, insumo_id_insumo)
+);
