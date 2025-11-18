@@ -1,0 +1,15 @@
+# Railway ignore file - files to exclude from deployment
+.env
+.env.local
+*.log
+target/
+back/target/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+node_modules/
+*.md
+!README.md
+!RAILWAY_DEPLOYMENT.md
+
