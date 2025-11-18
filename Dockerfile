@@ -29,5 +29,6 @@ COPY --from=build /app/back/target/back-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8081
 
 # Run the application
+# Railway sets PORT automatically, Spring Boot will use it via application.properties
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
