@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleGenericException(Exception e) {
         Map<String, String> error = new HashMap<>();
         error.put("error", "An error occurred: " + e.getMessage());
-        e.printStackTrace(); // Log the full stack trace for debugging
+        e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
