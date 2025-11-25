@@ -4,26 +4,42 @@ import { apiGet, apiPost, apiPut, apiDelete } from "../services/api";
 import CrudTable from "../components/CrudTable";
 
 interface Formula {
-  id: number;
-  produtoId: number;
-  descricao: string;
+  idFormula: number;
+  descricaoModoPreparo: string | null;
+  produto: {
+    idProduto: number;
+    nome: string;
+  };
 }
 
 export default function FormulasView() {
   const [formulas, setFormulas] = useState<Formula[]>([]);
+  const [produtos, setProdutos] = useState<Array<{ idProduto: number; nome: string }>>([]);
   const [form, setForm] = useState({
     produtoId: "",
-    descricao: "",
+    descricaoModoPreparo: "",
   });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
+      setError(null);
       try {
-        const data: Formula[] = await apiGet("/api/formulas");
-        setFormulas(data);
-      } catch (err) {
+        const [formulasData, produtosData] = await Promise.all([
+          apiGet("/api/formulas"),
+          apiGet("/api/produtos")
+        ]);
+        setFormulas(formulasData);
+        setProdutos(produtosData);
+      } catch (err: any) {
+        const errorMsg = err?.message || "Erro ao carregar fórmulas";
+        setError(errorMsg);
         console.error("Erro ao carregar fórmulas", err);
+      } finally {
+        setLoading(false);
       }
     }
     load();
@@ -31,11 +47,18 @@ export default function FormulasView() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!form.produtoId) {
+      setError("Selecione um produto");
+      return;
+    }
 
     const payload = {
-      produtoId: Number(form.produtoId),
-      descricao: form.descricao,
-      // TODO: alinhar com Formula.java (campos reais)
+      descricaoModoPreparo: form.descricaoModoPreparo,
+      produto: {
+        idProduto: parseInt(form.produtoId)
+      }
     };
 
     try {
@@ -45,7 +68,7 @@ export default function FormulasView() {
           payload
         );
         setFormulas((prev) =>
-          prev.map((f) => (f.id === editingId ? updated : f))
+          prev.map((f) => (f.idFormula === editingId ? updated : f))
         );
         setEditingId(null);
       } else {
@@ -53,25 +76,33 @@ export default function FormulasView() {
         setFormulas((prev) => [...prev, created]);
       }
 
-      setForm({ produtoId: "", descricao: "" });
-    } catch (err) {
+      setForm({ produtoId: "", descricaoModoPreparo: "" });
+    } catch (err: any) {
+      const errorMsg = err?.message || "Erro ao salvar fórmula";
+      setError(errorMsg);
       console.error("Erro ao salvar fórmula", err);
     }
   };
 
   const handleEdit = (row: any) => {
-    setEditingId(row.id);
+    const id = row.id ?? row.idFormula;
+    setEditingId(id);
     setForm({
-      produtoId: String(row["Produto"] ?? row.produtoId ?? ""),
-      descricao: row["Descrição"] ?? row.descricao ?? "",
+      produtoId: row.produto?.idProduto ? String(row.produto.idProduto) : "",
+      descricaoModoPreparo: row["Descrição"] ?? row.descricaoModoPreparo ?? "",
     });
   };
 
   const handleDelete = async (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir esta fórmula?")) return;
+    
+    setError(null);
     try {
       await apiDelete(`/api/formulas/${id}`);
-      setFormulas((prev) => prev.filter((f) => f.id !== id));
-    } catch (err) {
+      setFormulas((prev) => prev.filter((f) => f.idFormula !== id));
+    } catch (err: any) {
+      const errorMsg = err?.message || "Erro ao excluir fórmula";
+      setError(errorMsg);
       console.error("Erro ao excluir fórmula", err);
     }
   };
@@ -97,25 +128,31 @@ export default function FormulasView() {
           <form onSubmit={handleSubmit}>
             <div className="form-grid">
               <div className="form-row">
-                <label>ID do Produto</label>
-                <input
+                <label>Produto</label>
+                <select
                   value={form.produtoId}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, produtoId: e.target.value }))
                   }
-                  placeholder="Ex.: 1"
                   required
-                />
+                >
+                  <option value="">Selecione um produto</option>
+                  {produtos.map((p) => (
+                    <option key={p.idProduto} value={p.idProduto}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-row" style={{ gridColumn: "1 / -1" }}>
-                <label>Descrição / Composição</label>
+                <label>Descrição do Modo de Preparo</label>
                 <textarea
-                  value={form.descricao}
+                  value={form.descricaoModoPreparo}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, descricao: e.target.value }))
+                    setForm((f) => ({ ...f, descricaoModoPreparo: e.target.value }))
                   }
-                  placeholder="Ex.: 50% base X, 30% essência Y, 20% aditivo Z"
+                  placeholder="Ex.: 50% oleo de girassol, 50% agua, 1 frasco 60ml, 1 tampa conta gotas"
                   style={{
                     background: "rgba(15,15,20,0.85)",
                     borderRadius: "10px",
@@ -154,15 +191,31 @@ export default function FormulasView() {
           <h2>Fórmulas cadastradas</h2>
         </div>
 
+        {error && (
+          <div className="error-message" style={{ 
+            padding: "1rem", 
+            margin: "1rem 0", 
+            background: "#fee", 
+            border: "1px solid #fcc", 
+            borderRadius: "4px",
+            color: "#c33"
+          }}>
+            {error}
+          </div>
+        )}
+
         <div className="table-wrapper">
-          {formulas.length === 0 ? (
+          {loading ? (
+            <div className="empty-state">Carregando...</div>
+          ) : formulas.length === 0 ? (
             <div className="empty-state">Nenhuma fórmula cadastrada.</div>
           ) : (
             <CrudTable
               data={formulas.map((f) => ({
-                id: f.id,
-                Produto: f.produtoId,
-                Descrição: f.descricao,
+                id: f.idFormula,
+                idFormula: f.idFormula,
+                Produto: f.produto?.nome ?? "-",
+                "Descrição do Modo de Preparo": f.descricaoModoPreparo ?? "-",
               }))}
               onEdit={handleEdit}
               onDelete={handleDelete}
