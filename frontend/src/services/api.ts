@@ -22,7 +22,8 @@ async function handleResponse(res: Response) {
 
 export async function apiGet(path: string) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
+    // credentials: "include" - Uncomment when implementing authentication
+    // Note: Backend must use specific origins (not "*") when credentials are enabled
   });
   return handleResponse(res);
 }
@@ -32,6 +33,7 @@ export async function apiPost(path: string, body: any) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    // credentials: "include" - Uncomment when implementing authentication
   });
   return handleResponse(res);
 }
@@ -41,6 +43,7 @@ export async function apiPut(path: string, body: any) {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    // credentials: "include" - Uncomment when implementing authentication
   });
   return handleResponse(res);
 }
@@ -48,6 +51,7 @@ export async function apiPut(path: string, body: any) {
 export async function apiDelete(path: string) {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method: "DELETE",
+    // credentials: "include" - Uncomment when implementing authentication
   });
   return handleResponse(res);
 }
