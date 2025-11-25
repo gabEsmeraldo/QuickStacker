@@ -19,12 +19,12 @@ const AuthContext = createContext<AuthContextProps | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     // TODO: integrar API
     setUser({ email });
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, _password: string) => {
     // TODO: integrar API
     setUser({ email, name });
   };

@@ -6,7 +6,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "produto")
-@JsonIgnoreProperties(ignoreUnknown = true) // Allow deserialization with partial data
+@JsonIgnoreProperties(ignoreUnknown = true) 
 public class Produto {
 
   @Id
@@ -25,15 +25,15 @@ public class Produto {
 
   @ManyToOne
   @JoinColumn(name = "categoria_id_categoria", nullable = false)
-  @JsonIgnoreProperties({ "produtos" }) // Prevent circular references
+  @JsonIgnoreProperties({ "produtos" }) 
   private Categoria categoria;
 
   @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL)
-  @JsonIgnoreProperties({ "produto" }) // Prevent circular references
+  @JsonIgnoreProperties({ "produto" }) 
   private List<Lote> lotes;
 
   @OneToOne(mappedBy = "produto", cascade = CascadeType.ALL)
-  @JsonIgnoreProperties({ "produto" }) // Prevent circular references
+  @JsonIgnoreProperties({ "produto" }) 
   private Formula formula;
 
   // Constructors
@@ -102,7 +102,7 @@ public class Produto {
     this.formula = formula;
   }
 
-  // metodo para calcular a quantidade total do produto usando a soma das quantidades dos lotes
+  // metodo para atualizar a quantidade total do produto usando a soma das quantidades dos lotes
   public void updateQuantidadeTotal() {
     this.quantidadeTotal = calculateQuantidadeTotal();
   }
