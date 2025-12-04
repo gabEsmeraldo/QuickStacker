@@ -1,8 +1,12 @@
 package com.QuickStacker.back.controller;
 
+import com.QuickStacker.back.dto.FormulaDTO;
 import com.QuickStacker.back.entity.Formula;
 import com.QuickStacker.back.service.FormulaService;
+import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -42,21 +46,62 @@ public class FormulaController {
   }
 
   @PostMapping
-  public ResponseEntity<Formula> createFormula(@RequestBody Formula formula) {
-    Formula created = formulaService.create(formula);
-    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  public ResponseEntity<?> createFormula(@Valid @RequestBody FormulaDTO dto) {
+    try {
+      System.out.println("[FormulaController] POST /api/formulas - Received DTO: produtoId=" + (dto != null ? dto.getProdutoId() : "null") + ", descricaoModoPreparo=" + (dto != null ? dto.getDescricaoModoPreparo() : "null"));
+      if (dto == null) {
+        System.out.println("[FormulaController] ERROR: DTO is null!");
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Request body is required");
+        error.put("message", "Request body is required");
+        return ResponseEntity.badRequest().body(error);
+      }
+      if (dto.getProdutoId() == null) {
+        System.out.println("[FormulaController] ERROR: produtoId is null in DTO!");
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Produto ID is required");
+        error.put("message", "Produto ID is required");
+        return ResponseEntity.badRequest().body(error);
+      }
+      System.out.println("[FormulaController] Calling createFromDTO with produtoId=" + dto.getProdutoId());
+      Formula created = formulaService.createFromDTO(dto);
+      System.out.println("[FormulaController] Successfully created formula with id=" + created.getIdFormula());
+      return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    } catch (IllegalArgumentException e) {
+      System.out.println("[FormulaController] IllegalArgumentException: " + e.getMessage());
+      e.printStackTrace();
+      Map<String, String> error = new HashMap<>();
+      error.put("error", e.getMessage());
+      error.put("message", e.getMessage());
+      return ResponseEntity.badRequest().body(error);
+    } catch (Exception e) {
+      System.out.println("[FormulaController] Unexpected error: " + e.getClass().getName() + " - " + e.getMessage());
+      e.printStackTrace();
+      Map<String, String> error = new HashMap<>();
+      error.put("error", "Internal server error: " + e.getMessage());
+      error.put("message", "Internal server error: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Formula> updateFormula(
+  public ResponseEntity<?> updateFormula(
     @PathVariable Integer id,
-    @RequestBody Formula formula
+    @Valid @RequestBody FormulaDTO dto
   ) {
     try {
-      Formula updated = formulaService.update(id, formula);
+      Formula updated = formulaService.updateFromDTO(id, dto);
       return ResponseEntity.ok(updated);
     } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
+      Map<String, String> error = new HashMap<>();
+      error.put("error", e.getMessage());
+      error.put("message", e.getMessage());
+      return ResponseEntity.badRequest().body(error);
+    } catch (Exception e) {
+      Map<String, String> error = new HashMap<>();
+      error.put("error", "Internal server error: " + e.getMessage());
+      error.put("message", "Internal server error: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
   }
 

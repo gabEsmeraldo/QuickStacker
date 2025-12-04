@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
-  const { login } = useAuth(); // login(email, senha)
+  const { login, testModeEnabled, setTestModeEnabled } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,13 +34,50 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="login-form">
           {errorMsg && <div className="login-error">{errorMsg}</div>}
 
+          {/* Test Mode Toggle */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.75rem",
+              marginBottom: "1rem",
+              background: "rgba(255,255,255,0.05)",
+              borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            <label
+              style={{
+                margin: 0,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={testModeEnabled}
+                onChange={(e) => setTestModeEnabled(e.target.checked)}
+                style={{ cursor: "pointer" }}
+              />
+              <span
+                style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.8)" }}
+              >
+                Modo de Teste (pula login)
+              </span>
+            </label>
+          </div>
+
           <label>Email</label>
           <input
             type="email"
             placeholder="seuemail@empresa.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
+            required={!testModeEnabled}
+            disabled={testModeEnabled}
           />
 
           <label>Senha</label>
@@ -49,11 +86,20 @@ export default function LoginPage() {
             placeholder="•••••••••"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            required
+            required={!testModeEnabled}
+            disabled={testModeEnabled}
           />
 
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "Entrando..." : "Acessar Painel"}
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading || testModeEnabled}
+          >
+            {testModeEnabled
+              ? "Modo de Teste Ativo"
+              : loading
+              ? "Entrando..."
+              : "Acessar Painel"}
           </button>
         </form>
 

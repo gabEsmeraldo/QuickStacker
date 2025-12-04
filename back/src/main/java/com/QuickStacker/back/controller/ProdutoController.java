@@ -1,8 +1,12 @@
 package com.QuickStacker.back.controller;
 
+import com.QuickStacker.back.dto.ProdutoDTO;
 import com.QuickStacker.back.entity.Produto;
 import com.QuickStacker.back.service.ProdutoService;
+import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -47,10 +51,22 @@ public class ProdutoController {
     return ResponseEntity.ok(produtos);
   }
 
-  @PostMapping
-  public ResponseEntity<Produto> createProduto(@RequestBody Produto produto) {
-    Produto created = produtoService.create(produto);
-    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  @PostMapping // Garanta que esta anotação existe
+  public ResponseEntity<?> createProduto(@RequestBody Produto produto) {
+    try {
+      // Passa a entidade diretamente para o service
+      Produto created = produtoService.create(produto);
+      return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    } catch (IllegalArgumentException e) {
+      Map<String, String> error = new HashMap<>();
+      error.put("error", e.getMessage());
+      return ResponseEntity.badRequest().body(error);
+    } catch (Exception e) {
+      e.printStackTrace(); // Bom para debug
+      Map<String, String> error = new HashMap<>();
+      error.put("error", "Erro interno: " + e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
   }
 
   @PutMapping("/{id}")

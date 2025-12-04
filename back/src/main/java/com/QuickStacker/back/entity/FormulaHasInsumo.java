@@ -9,11 +9,13 @@ public class FormulaHasInsumo {
     @Id
     @ManyToOne
     @JoinColumn(name = "formula_id_formula", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore // Ignore formula to prevent circular reference
     private Formula formula;
 
     @Id
     @ManyToOne
     @JoinColumn(name = "insumo_id_insumo", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"formulaInsumos"}) // Prevent circular references
     private Insumo insumo;
 
     @Column(name = "quantidade_utilizada", nullable = false)

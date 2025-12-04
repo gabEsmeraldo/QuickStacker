@@ -5,6 +5,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "insumo")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"formulaInsumos"}) // Always ignore at class level
 public class Insumo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +22,7 @@ public class Insumo {
     private List<LoteInsumo> lotesInsumo;
 
     @OneToMany(mappedBy = "insumo", cascade = CascadeType.ALL)
+    @com.fasterxml.jackson.annotation.JsonIgnore // Prevent circular references
     private List<FormulaHasInsumo> formulaInsumos;
 
     // Constructors
@@ -64,6 +66,7 @@ public class Insumo {
         this.lotesInsumo = lotesInsumo;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore // Also ignore the getter
     public List<FormulaHasInsumo> getFormulaInsumos() {
         return formulaInsumos;
     }

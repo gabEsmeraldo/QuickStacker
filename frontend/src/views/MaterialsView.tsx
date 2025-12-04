@@ -1,50 +1,98 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { apiGet, apiPost, apiPut, apiDelete } from "../services/api";
 import CrudTable from "../components/CrudTable";
 
-interface Material {
-  id: number;
-  name: string;
-  code: string;
-  supplier: string;
-  stock: number;
-  minStock: number;
+interface MateriaPrima {
+  idMateriaPrima: number;
+  nome: string;
+  densidade: number | null;
+  pesoUnitario: number | null;
 }
 
 export default function MaterialsView() {
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [materials, setMaterials] = useState<MateriaPrima[]>([]);
   const [form, setForm] = useState({
-    name: "",
-    code: "",
-    supplier: "",
-    stock: "",
-    minStock: "",
+    nome: "",
+    densidade: "",
+    pesoUnitario: "",
   });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data: MateriaPrima[] = await apiGet("/api/materias-primas");
+        setMaterials(data);
+      } catch (err: any) {
+        const errorMsg = err?.message || "Erro ao carregar matérias-primas";
+        setError(errorMsg);
+        console.error("Erro ao carregar matérias-primas", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    const newItem: Material = {
-      id: Date.now(),
-      name: form.name,
-      code: form.code,
-      supplier: form.supplier,
-      stock: Number(form.stock || 0),
-      minStock: Number(form.minStock || 0),
+    const payload = {
+      nome: form.nome,
+      densidade: form.densidade ? parseFloat(form.densidade) : null,
+      pesoUnitario: form.pesoUnitario ? parseFloat(form.pesoUnitario) : null,
     };
 
-    setMaterials((prev) => [...prev, newItem]);
+    try {
+      if (editingId) {
+        const updated: MateriaPrima = await apiPut(
+          `/api/materias-primas/${editingId}`,
+          payload
+        );
+        setMaterials((prev) =>
+          prev.map((m) => (m.idMateriaPrima === editingId ? updated : m))
+        );
+        setEditingId(null);
+      } else {
+        const created: MateriaPrima = await apiPost("/api/materias-primas", payload);
+        setMaterials((prev) => [...prev, created]);
+      }
 
+      setForm({ nome: "", densidade: "", pesoUnitario: "" });
+    } catch (err: any) {
+      const errorMsg = err?.message || "Erro ao salvar matéria-prima";
+      setError(errorMsg);
+      console.error("Erro ao salvar matéria-prima", err);
+    }
+  };
+
+  const handleEdit = (row: any) => {
+    const id = row.id ?? row.idMateriaPrima;
+    setEditingId(id);
     setForm({
-      name: "",
-      code: "",
-      supplier: "",
-      stock: "",
-      minStock: "",
+      nome: row.Nome ?? row.nome ?? "",
+      densidade: row.densidade ? String(row.densidade) : "",
+      pesoUnitario: row.pesoUnitario ? String(row.pesoUnitario) : "",
     });
   };
 
-  const handleDelete = (id: number) => {
-    setMaterials((prev) => prev.filter((x) => x.id !== id));
+  const handleDelete = async (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir esta matéria-prima?")) return;
+    
+    setError(null);
+    try {
+      await apiDelete(`/api/materias-primas/${id}`);
+      setMaterials((prev) => prev.filter((m) => m.idMateriaPrima !== id));
+    } catch (err: any) {
+      const errorMsg = err?.message || "Erro ao excluir matéria-prima";
+      setError(errorMsg);
+      console.error("Erro ao excluir matéria-prima", err);
+    }
   };
 
   return (
@@ -71,9 +119,9 @@ export default function MaterialsView() {
               <div className="form-row">
                 <label>Nome da matéria-prima</label>
                 <input
-                  value={form.name}
+                  value={form.nome}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
+                    setForm((f) => ({ ...f, nome: e.target.value }))
                   }
                   placeholder="Ex.: Ácido cítrico"
                   required
@@ -81,57 +129,38 @@ export default function MaterialsView() {
               </div>
 
               <div className="form-row">
-                <label>Código interno</label>
-                <input
-                  value={form.code}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, code: e.target.value }))
-                  }
-                  placeholder="Ex.: MP-001"
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <label>Fornecedor</label>
-                <input
-                  value={form.supplier}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, supplier: e.target.value }))
-                  }
-                  placeholder="Ex.: Indústrias Brasil"
-                />
-              </div>
-
-              <div className="form-row">
-                <label>Estoque atual</label>
+                <label>Densidade</label>
                 <input
                   type="number"
+                  step="0.01"
                   min={0}
-                  value={form.stock}
+                  value={form.densidade}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, stock: e.target.value }))
+                    setForm((f) => ({ ...f, densidade: e.target.value }))
                   }
-                  placeholder="0"
+                  placeholder="Ex.: 0.98"
                 />
               </div>
 
               <div className="form-row">
-                <label>Estoque mínimo</label>
+                <label>Peso Unitário</label>
                 <input
                   type="number"
+                  step="0.01"
                   min={0}
-                  value={form.minStock}
+                  value={form.pesoUnitario}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, minStock: e.target.value }))
+                    setForm((f) => ({ ...f, pesoUnitario: e.target.value }))
                   }
-                  placeholder="0"
+                  placeholder="Ex.: 50.0"
                 />
               </div>
             </div>
 
             <div className="form-actions">
-              <button className="btn btn-primary">Cadastrar matéria-prima</button>
+              <button className="btn btn-primary">
+                {editingId ? "Salvar alterações" : "Cadastrar matéria-prima"}
+              </button>
             </div>
           </form>
         </section>
@@ -160,21 +189,36 @@ export default function MaterialsView() {
           <h2>Lista de matérias-primas</h2>
         </div>
 
+        {error && (
+          <div className="error-message" style={{ 
+            padding: "1rem", 
+            margin: "1rem 0", 
+            background: "#fee", 
+            border: "1px solid #fcc", 
+            borderRadius: "4px",
+            color: "#c33"
+          }}>
+            {error}
+          </div>
+        )}
+
         <div className="table-wrapper">
-          {materials.length === 0 ? (
+          {loading ? (
+            <div className="empty-state">Carregando...</div>
+          ) : materials.length === 0 ? (
             <div className="empty-state">
               Nenhum item cadastrado ainda.
             </div>
           ) : (
             <CrudTable
               data={materials.map((mp) => ({
-                id: mp.id,
-                Nome: mp.name,
-                Código: mp.code,
-                Fornecedor: mp.supplier,
-                Estoque: mp.stock,
-                "Min. Estoque": mp.minStock,
+                id: mp.idMateriaPrima,
+                idMateriaPrima: mp.idMateriaPrima,
+                Nome: mp.nome,
+                Densidade: mp.densidade ?? "-",
+                "Peso Unitário": mp.pesoUnitario ?? "-",
               }))}
+              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           )}
