@@ -1,9 +1,11 @@
 package com.QuickStacker.back.service;
 
+import com.QuickStacker.back.dto.ProdutoDTO;
 import com.QuickStacker.back.entity.Categoria;
 import com.QuickStacker.back.entity.Produto;
 import com.QuickStacker.back.repository.CategoriaRepository;
 import com.QuickStacker.back.repository.ProdutoRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,9 @@ public class ProdutoService {
 
     @Autowired
     private CategoriaRepository categoriaRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     public List<Produto> findAll() {
         return repository.findAll();
@@ -51,6 +56,44 @@ public class ProdutoService {
         }
         
         return repository.save(produto);
+    }
+
+    public Produto createFromDTO(ProdutoDTO dto) {
+        System.out.println("[ProdutoService] createFromDTO called with categoriaId=" + (dto != null ? dto.getCategoriaId() : "null"));
+        // Validate categoriaId is required
+        if (dto == null || dto.getCategoriaId() == null) {
+            System.out.println("[ProdutoService] ERROR: categoriaId is null!");
+            throw new IllegalArgumentException("Categoria ID is required");
+        }
+        
+        System.out.println("[ProdutoService] Looking up categoria with id=" + dto.getCategoriaId());
+        // Validate categoria exists
+        Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+            .orElseThrow(() -> {
+                System.out.println("[ProdutoService] ERROR: Categoria not found with id=" + dto.getCategoriaId());
+                return new IllegalArgumentException("Categoria not found with id: " + dto.getCategoriaId());
+            });
+        
+        System.out.println("[ProdutoService] Categoria found: " + categoria.getDescricao() + " (ID: " + categoria.getIdCategoria() + ")");
+        
+        // Create produto and set categoria - use the categoria from findById (should be managed)
+        Produto produto = new Produto();
+        produto.setNome(dto.getNome());
+        produto.setValidadeEmMeses(dto.getValidadeEmMeses());
+        
+        // Explicitly set the categoria - ensure it's the one from the repository (managed entity)
+        produto.setCategoria(categoria);
+        
+        // Verify categoria is set before save
+        if (produto.getCategoria() == null || produto.getCategoria().getIdCategoria() == null) {
+            throw new IllegalStateException("Categoria was not set on produto before save!");
+        }
+        
+        System.out.println("[ProdutoService] Before save - Produto categoria ID: " + produto.getCategoria().getIdCategoria());
+        
+        Produto saved = repository.save(produto);
+        System.out.println("[ProdutoService] After save - Produto saved with id=" + saved.getIdProduto());
+        return saved;
     }
 
     public Produto update(Integer id, Produto produto) {

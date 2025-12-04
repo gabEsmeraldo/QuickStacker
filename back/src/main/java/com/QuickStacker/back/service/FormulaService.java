@@ -1,5 +1,6 @@
 package com.QuickStacker.back.service;
 
+import com.QuickStacker.back.dto.FormulaDTO;
 import com.QuickStacker.back.entity.Formula;
 import com.QuickStacker.back.entity.Produto;
 import com.QuickStacker.back.repository.FormulaRepository;
@@ -53,6 +54,40 @@ public class FormulaService {
         return repository.save(formula);
     }
 
+    public Formula createFromDTO(FormulaDTO dto) {
+        System.out.println("[FormulaService] createFromDTO called with produtoId=" + (dto != null ? dto.getProdutoId() : "null"));
+        // Validate produtoId is required
+        if (dto == null || dto.getProdutoId() == null) {
+            System.out.println("[FormulaService] ERROR: produtoId is null!");
+            throw new IllegalArgumentException("Produto ID is required");
+        }
+        
+        System.out.println("[FormulaService] Looking up produto with id=" + dto.getProdutoId());
+        // Validate produto exists
+        Produto produto = produtoRepository.findById(dto.getProdutoId())
+            .orElseThrow(() -> {
+                System.out.println("[FormulaService] ERROR: Produto not found with id=" + dto.getProdutoId());
+                return new IllegalArgumentException("Produto not found with id: " + dto.getProdutoId());
+            });
+        
+        System.out.println("[FormulaService] Produto found: " + produto.getNome());
+        
+        // Check if this produto already has a formula (OneToOne relationship)
+        Optional<Formula> existingFormula = repository.findByProdutoIdProduto(produto.getIdProduto());
+        if (existingFormula.isPresent()) {
+            System.out.println("[FormulaService] ERROR: Produto already has a formula");
+            throw new IllegalArgumentException("Produto with id " + produto.getIdProduto() + " already has a formula");
+        }
+        
+        System.out.println("[FormulaService] Creating new formula");
+        Formula formula = new Formula();
+        formula.setDescricaoModoPreparo(dto.getDescricaoModoPreparo());
+        formula.setProduto(produto);
+        Formula saved = repository.save(formula);
+        System.out.println("[FormulaService] Formula saved with id=" + saved.getIdFormula());
+        return saved;
+    }
+
     public Formula update(Integer id, Formula formula) {
         Formula existing = repository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Formula not found with id: " + id));
@@ -63,6 +98,31 @@ public class FormulaService {
         if (formula.getProduto() != null && formula.getProduto().getIdProduto() != null) {
             Produto produto = produtoRepository.findById(formula.getProduto().getIdProduto())
                 .orElseThrow(() -> new IllegalArgumentException("Produto not found with id: " + formula.getProduto().getIdProduto()));
+            existing.setProduto(produto);
+        }
+        
+        return repository.save(existing);
+    }
+
+    public Formula updateFromDTO(Integer id, FormulaDTO dto) {
+        Formula existing = repository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Formula not found with id: " + id));
+        
+        existing.setDescricaoModoPreparo(dto.getDescricaoModoPreparo());
+        
+        // Update produto if provided
+        if (dto.getProdutoId() != null) {
+            Produto produto = produtoRepository.findById(dto.getProdutoId())
+                .orElseThrow(() -> new IllegalArgumentException("Produto not found with id: " + dto.getProdutoId()));
+            
+            // Check if changing produto, and if new produto already has a formula
+            if (!existing.getProduto().getIdProduto().equals(produto.getIdProduto())) {
+                Optional<Formula> existingFormula = repository.findByProdutoIdProduto(produto.getIdProduto());
+                if (existingFormula.isPresent() && !existingFormula.get().getIdFormula().equals(id)) {
+                    throw new IllegalArgumentException("Produto with id " + produto.getIdProduto() + " already has a formula");
+                }
+            }
+            
             existing.setProduto(produto);
         }
         

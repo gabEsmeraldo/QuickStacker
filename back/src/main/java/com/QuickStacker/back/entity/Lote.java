@@ -1,5 +1,6 @@
 package com.QuickStacker.back.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -25,6 +26,7 @@ public class Lote {
 
     @ManyToOne
     @JoinColumn(name = "id_produto", nullable = false)
+    @JsonIgnoreProperties({"lotes", "formula", "categoria"}) // Prevent circular references
     private Produto produto;
 
     // Constructors

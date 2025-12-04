@@ -13,11 +13,13 @@ public class FormulaHasMateriaPrima {
   @ManyToOne
   @MapsId("formulaIdFormula")
   @JoinColumn(name = "formula_id_formula", nullable = false)
+  @com.fasterxml.jackson.annotation.JsonIgnore // Ignore formula to prevent circular reference
   private Formula formula;
 
   @ManyToOne
   @MapsId("materiaPrimaIdMateriaPrima")
   @JoinColumn(name = "materia_prima_id_materia_prima", nullable = false)
+  @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"formulaMateriasPrimas", "lotesMateriaPrima", "formula"}) // Prevent circular references
   private MateriaPrima materiaPrima;
 
   @Column(name = "quantidade_utilizada", nullable = false)

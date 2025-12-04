@@ -15,7 +15,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Invalid JSON format: " + e.getMessage());
+        String msg = "Invalid JSON format: " + e.getMessage();
+        error.put("error", msg);
+        error.put("message", msg);
+        System.out.println("[GlobalExceptionHandler] HttpMessageNotReadableException: " + msg);
+        e.printStackTrace();
         return ResponseEntity.badRequest().body(error);
     }
 

@@ -1,6 +1,8 @@
 package com.QuickStacker.back.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -33,7 +35,7 @@ public class Produto {
   private List<Lote> lotes;
 
   @OneToOne(mappedBy = "produto", cascade = CascadeType.ALL)
-  @JsonIgnoreProperties({ "produto" }) 
+  @JsonIgnoreProperties({ "produto", "formulaMateriasPrimas", "formulaInsumos" }) // Prevent circular references
   private Formula formula;
 
   // Constructors
@@ -43,6 +45,12 @@ public class Produto {
     this.nome = nome;
     this.validadeEmMeses = validadeEmMeses;
     this.categoria = categoria;
+  }
+
+  // JsonCreator for deserialization with just ID (used when creating relationships)
+  @JsonCreator
+  public Produto(@JsonProperty("idProduto") Integer idProduto) {
+    this.idProduto = idProduto;
   }
 
   // Getters and Setters

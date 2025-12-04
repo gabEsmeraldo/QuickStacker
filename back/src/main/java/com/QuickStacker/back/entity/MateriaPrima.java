@@ -5,6 +5,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "materia_prima")
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"formulaMateriasPrimas"}) // Always ignore at class level
 public class MateriaPrima {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,9 +22,11 @@ public class MateriaPrima {
     private Double pesoUnitario;
 
     @OneToMany(mappedBy = "materiaPrima", cascade = CascadeType.ALL)
+    @com.fasterxml.jackson.annotation.JsonIgnore // Ignore lotes to reduce nesting
     private List<LoteMateriaPrima> lotesMateriaPrima;
 
     @OneToMany(mappedBy = "materiaPrima", cascade = CascadeType.ALL)
+    @com.fasterxml.jackson.annotation.JsonIgnore // Prevent circular references
     private List<FormulaHasMateriaPrima> formulaMateriasPrimas;
 
     // Constructors
@@ -69,6 +72,7 @@ public class MateriaPrima {
         this.pesoUnitario = pesoUnitario;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore // Also ignore the getter
     public List<LoteMateriaPrima> getLotesMateriaPrima() {
         return lotesMateriaPrima;
     }
@@ -77,6 +81,7 @@ public class MateriaPrima {
         this.lotesMateriaPrima = lotesMateriaPrima;
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore // Also ignore the getter
     public List<FormulaHasMateriaPrima> getFormulaMateriasPrimas() {
         return formulaMateriasPrimas;
     }
