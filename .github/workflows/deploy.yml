@@ -1,4 +1,4 @@
-name: Deploy Frontend to Elastic Beanstalk
+name: Code Checkout (For incoming updates) 
 
 on:
   push:
@@ -13,70 +13,3 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Instalar Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Instalar dependências
-        working-directory: ./frontend
-        run: npm install
-
-      - name: Build do frontend
-        working-directory: ./frontend
-        run: npm run build
-
-      # Criar Dockerfile automaticamente (frontend em NGINX)
-      - name: Criar Dockerfile do frontend
-        run: |
-          cat > Dockerfile <<EOF
-          FROM nginx:stable
-          COPY frontend/dist /usr/share/nginx/html
-          EXPOSE 80
-          CMD ["nginx", "-g", "daemon off;"]
-          EOF
-
-      - name: Configurar credenciais AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Gerar Dockerrun.aws.json
-        run: |
-          cat > Dockerrun.aws.json <<EOF
-          {
-            "AWSEBDockerrunVersion": 1,
-            "Image": {
-              "Name": "${{ secrets.ECR_REPOSITORY }}:latest",
-              "Update": "true"
-            },
-            "Ports": [
-              {
-                "ContainerPort": 80
-              }
-            ]
-          }
-          EOF
-
-      # Compacta arquivo para o EB
-      - name: Criar bundle para Elastic Beanstalk
-        run: zip -r frontend-deploy.zip Dockerfile Dockerrun.aws.json frontend/dist
-
-      - name: Enviar bundle para S3
-        run: |
-          aws s3 cp frontend-deploy.zip s3://${{ secrets.EB_S3_BUCKET }}/frontend-${{ github.sha }}.zip
-
-      - name: Criar nova versão do EB
-        run: |
-          aws elasticbeanstalk create-application-version \
-            --application-name "${{ secrets.EB_APP_NAME }}" \
-            --version-label "frontend-${{ github.sha }}" \
-            --source-bundle S3Bucket="${{ secrets.EB_S3_BUCKET }}",S3Key="frontend-${{ github.sha }}.zip"
-
-      - name: Atualizar ambiente do EB
-        run: |
-          aws elasticbeanstalk update-environment \
-            --environment-name "${{ secrets.EB_ENV_NAME }}" \
-            --version-label "frontend-${{ github.sha }}"
