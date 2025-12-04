@@ -51,39 +51,20 @@ public class ProdutoController {
     return ResponseEntity.ok(produtos);
   }
 
-  @PostMapping
-  public ResponseEntity<?> createProduto(@Valid @RequestBody ProdutoDTO dto) {
+  @PostMapping // Garanta que esta anotação existe
+  public ResponseEntity<?> createProduto(@RequestBody Produto produto) {
     try {
-      System.out.println("[ProdutoController] POST /api/produtos - Received DTO: categoriaId=" + (dto != null ? dto.getCategoriaId() : "null") + ", nome=" + (dto != null ? dto.getNome() : "null"));
-      if (dto == null) {
-        System.out.println("[ProdutoController] ERROR: DTO is null!");
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Request body is required");
-        error.put("message", "Request body is required");
-        return ResponseEntity.badRequest().body(error);
-      }
-      if (dto.getCategoriaId() == null) {
-        System.out.println("[ProdutoController] ERROR: categoriaId is null in DTO!");
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "Categoria ID is required");
-        error.put("message", "Categoria ID is required");
-        return ResponseEntity.badRequest().body(error);
-      }
-      Produto created = produtoService.createFromDTO(dto);
-      System.out.println("[ProdutoController] Successfully created produto with id=" + created.getIdProduto());
+      // Passa a entidade diretamente para o service
+      Produto created = produtoService.create(produto);
       return ResponseEntity.status(HttpStatus.CREATED).body(created);
     } catch (IllegalArgumentException e) {
-      System.out.println("[ProdutoController] IllegalArgumentException: " + e.getMessage());
       Map<String, String> error = new HashMap<>();
       error.put("error", e.getMessage());
-      error.put("message", e.getMessage());
       return ResponseEntity.badRequest().body(error);
     } catch (Exception e) {
-      System.out.println("[ProdutoController] Unexpected error: " + e.getClass().getName() + " - " + e.getMessage());
-      e.printStackTrace();
+      e.printStackTrace(); // Bom para debug
       Map<String, String> error = new HashMap<>();
-      error.put("error", "Internal server error: " + e.getMessage());
-      error.put("message", "Internal server error: " + e.getMessage());
+      error.put("error", "Erro interno: " + e.getMessage());
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
   }

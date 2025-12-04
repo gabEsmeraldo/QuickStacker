@@ -94,7 +94,9 @@ export default function ProductsView() {
       validadeEmMeses: form.validadeEmMeses
         ? parseInt(form.validadeEmMeses)
         : null,
-      categoriaId: parseInt(form.categoriaId),
+      categoria: {
+        idCategoria: parseInt(form.categoriaId),
+      },
     };
 
     try {

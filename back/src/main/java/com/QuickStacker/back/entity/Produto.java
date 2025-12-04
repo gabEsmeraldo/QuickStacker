@@ -47,12 +47,6 @@ public class Produto {
     this.categoria = categoria;
   }
 
-  // JsonCreator for deserialization with just ID (used when creating relationships)
-  @JsonCreator
-  public Produto(@JsonProperty("idProduto") Integer idProduto) {
-    this.idProduto = idProduto;
-  }
-
   // Getters and Setters
   public Integer getIdProduto() {
     return idProduto;

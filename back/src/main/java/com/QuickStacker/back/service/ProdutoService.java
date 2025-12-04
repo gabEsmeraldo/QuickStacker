@@ -43,14 +43,15 @@ public class ProdutoService {
     }
 
     public Produto create(Produto produto) {
-        // Validate categoria exists
-        if (produto.getCategoria() != null && produto.getCategoria().getIdCategoria() != null) {
-            Categoria categoria = categoriaRepository.findById(produto.getCategoria().getIdCategoria())
-                .orElseThrow(() -> new IllegalArgumentException("Categoria not found with id: " + produto.getCategoria().getIdCategoria()));
-            produto.setCategoria(categoria);
+        if (produto.getCategoria() == null || produto.getCategoria().getIdCategoria() == null) {
+            throw new IllegalArgumentException("A Categoria é obrigatória para cadastrar um produto.");
         }
+
+        Categoria categoria = categoriaRepository.findById(produto.getCategoria().getIdCategoria())
+            .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada com o ID: " + produto.getCategoria().getIdCategoria()));
         
-        // Update quantidade total from lotes if available
+        produto.setCategoria(categoria);
+
         if (produto.getLotes() != null && !produto.getLotes().isEmpty()) {
             produto.updateQuantidadeTotal();
         }
